@@ -19,6 +19,7 @@ from logging import DEBUG, INFO
 from leaderprotection.arearesilience import AreaResilience
 from agentstart.agentstart import AgentStart
 from leaderprotection.leaderreelection import LeaderReelection
+from policies.policiesdistribution import PoliciesDistribution
 
 from flask import Flask, request
 from flask_restplus import Api, Resource, fields
@@ -29,12 +30,13 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.2'
+__version__ = 'b2.1.0'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
 arearesilience = AreaResilience()
 agentstart = AgentStart()
+policiesdistribution = PoliciesDistribution()
 
 # ### main.py code ### #
 # Set Logger
@@ -52,7 +54,7 @@ LOG.debug('Environment Variables: {}'.format(CPARAMS.get_all()))
 # Prepare Server
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-api = Api(app, version=__version__, title='Policies Module API', description='Resource Manager - Agent Controller')
+api = Api(app, version=__version__, title='Control Resilience Management Module - {}'.format(CPARAMS.DEVICEID_FLAG), description='API')
 
 pl = api.namespace('api/v2/resource-management/policies', description='Policies Module Operations')
 rm = api.namespace('rm', description='Resource Manager Operations')
@@ -89,6 +91,16 @@ components_info_model = api.model('Resource Manager Components Information', {
     "categorization_description": fields.String(description='Categorization module description / parameters received'),
     "policies_description": fields.String(description='Policies module description / parameters received'),
     "cau_client_description": fields.String(description='CAUClient module description / parameters received')
+})
+
+policies_distr_model = api.model('Policies',{
+    "LMR": fields.String(description='Leader Mandatory Requirements policies in JSON format.'),
+    "LDR": fields.String(description='Leader Discretionary Requirements in JSON format.'),
+    "PLSP": fields.String(description='Passive Leader Selection Policies in JSON format.'),
+    "ALSP": fields.String(description='Automatic Leader Selection Policies in JSON format.'),
+    "LPP": fields.String(description='Leader Protection Policies in JSON format.'),
+    "LRP": fields.String(description='Leader Reelection Policies in JSON format.'),
+    "DP": fields.String(description='Distribution Policies in JSON format.')
 })
 
 
@@ -235,7 +247,7 @@ class role_change(Resource):
                 arearesilience.stop()
                 agentstart.switch(imLeader=False)
                 CPARAMS.LEADER_FLAG = False
-                arearesilience = AreaResilience(cimi)
+                arearesilience = AreaResilience(cimi, policiesdistribution.LPP)
                 arearesilience.start(agentstart.deviceID)
                 return {'imLeader': False, 'imBackup': False}, 200
             elif imBackup:
@@ -243,7 +255,7 @@ class role_change(Resource):
                 # Backup demotion
                 LOG.debug('Role change: Backup -> Agent')
                 arearesilience.stop()
-                arearesilience = AreaResilience(cimi)
+                arearesilience = AreaResilience(cimi, policiesdistribution.LPP)
                 arearesilience.start(agentstart.deviceID)
                 return {'imLeader': False, 'imBackup': False}, 200
             else:
@@ -330,6 +342,34 @@ class leaderInfo(Resource):     # TODO: Provisional, remove when possible
         }, 200
 
 
+@pl.route(URLS.END_POLICIESDISTR_RECV)
+class policyDistr(Resource):
+    """Policies Distribution Entrypoint"""
+    @pl.doc('post_policies')
+    @pl.expect(policies_distr_model)
+    @pl.response(200, 'Policies correctly received')
+    @pl.response(400, 'Message malformation')
+    def post(self):
+        """Policies Distribution Reception"""
+        correct = policiesdistribution.receivePolicies(api.payload)
+        if correct:
+            return {'result':correct}, 200
+        else:
+            return 400
+
+
+@pl.route(URLS.END_POLICIESDISTR_TRIGGER)
+class policyTrigger(Resource):
+    """Policies Distribution Send Trigger"""
+    @pl.doc('get_triggerpolicies')
+    @pl.response(200, 'Trigger accepted')
+    def get(self):
+        """Policies Distribution Send Trigger"""
+        iplist = [item.get('deviceIP') for item in cimi('topology')]
+        policiesdistribution.distributePolicies(iplist)
+        return 200
+
+
 # And da Main Program
 def cimi(key, default=None):    # TODO: Remove this (only for code redessign)
     value = default
@@ -360,7 +400,7 @@ def initialization():
 
     # 1. Area Resilience Module Creation
     LOG.debug('Area Resilience submodule creation')
-    arearesilience = AreaResilience(cimi)
+    arearesilience = AreaResilience(cimi, policiesdistribution.LPP)
     LOG.debug('Area Resilience created')
 
     # 2. Leader Reelection Module Creation (None)
@@ -389,30 +429,10 @@ def main():
 
 def debug():
     sleep(10)
-    LOG.info('Early start of Identification procedure...')
-    attempt = 0
-    successful = False
-    while attempt < 10 and not successful:      # TODO: Param
-        try:
-            r = requests.get(URLS.build_url_address(URLS.URL_IDENTIFICATION_START, portaddr=('identification', '46060')))   # TODO: Dynamic address
-            LOG.debug('Identification request result: {}'.format(r.json()))
-            successful = True
-        except ValueError:
-            LOG.debug('ValueError raised on Identification: {}'.format(r.text))
-        except:
-            LOG.warning('Early start of Identification not successful.')
-        finally:
-            if not successful:
-                sleep(10)
-            attempt += 1
-
-    sleep(5)
-
-    LOG.info('Starting Agent Flow...')
-    r = requests.get(URLS.build_url_address(URLS.URL_START_FLOW, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT))) # TODO
-    # r = requests.get(URLS.build_url_address(URLS.URL_POLICIES, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT))) # TODO
-    LOG.debug('Agent Flow request result: {}'.format(r.json()))
-    LOG.debug('Stoping thread activity.')
+    LOG.info('Starting Area Resilience...')
+    r = requests.get(URLS.build_url_address(URLS.URL_POLICIES, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
+    LOG.debug('Area Resilience request result: {}'.format(r.json()))
+    LOG.debug('Stopping thread activity.')
     return
 
 

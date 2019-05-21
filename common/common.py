@@ -5,7 +5,6 @@
     Common methods and utilities
 """
 
-__status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
 __author__ = 'Universitat Politècnica de Catalunya'
@@ -24,7 +23,7 @@ class common_params:
     CAU_CLIENT_ADDR = ('cau-client', 46065)
     WIFI_CONFIG_FILE = '/discovery/mF2C-VSIE.conf'
 
-    TIME_WAIT_INIT = 10.
+    TIME_WAIT_INIT = 2.
     TIME_WAIT_ALIVE = 5.
 
     def __init__(self):
@@ -84,6 +83,11 @@ class ModuleURLs:
     URL_START_FLOW = '{}{}/'.format(__POLICIES_BASE_URL, END_START_FLOW)
     END_POLICIES_KEEPALIVE = '/keepalive'
     URL_POLICIES_KEEPALIVE = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIES_KEEPALIVE)
+
+    END_POLICIESDISTR_RECV = '/receiveNewPolicies'
+    URL_POLICIESDISTR_RECV = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIESDISTR_RECV)
+    END_POLICIESDISTR_TRIGGER = '/PoliciesDistributionTrigger'
+    URL_POLICIESDISTR_TRIGGER = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIESDISTR_TRIGGER)
 
     URL_POLICIES_RMSTATUS = '/rm/components/'
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-    LEADER ELECTION POLICIES
+    LEADER SELECTION POLICIES
     Common methods and utilities
 """
 
@@ -9,17 +9,16 @@ from json import loads, dumps, JSONDecodeError
 from threading import Lock
 from common.logs import LOG
 
-__status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 
-class LeaderMandatoryRequirements:
-    RAM_MIN = 'RAM_MIN'
+class PassiveLeaderSelectionPolicies:
+    PLP_ENABLED = True
 
     POLICIES = {
-        'RAM_MIN' : 2000.     # MBytes
+        'PLP_ENABLED' : PLP_ENABLED
     }
 
     __lock = Lock()
@@ -53,12 +52,14 @@ class LeaderMandatoryRequirements:
                 return default
 
 
-class LeaderDiscretionaryRequirements:
-    POLICIES = {
-        'DISK_MIN' : 2000.  # MBytes
-    }
+class AutomaticLeaderSelectionPolicies:
+    MAX_MISSING_SCANS = 'MAX_MISSING_SCANS'
+    ALP_ENABLED = 'ALP_ENABLED'
 
-    DISK_MIN = 'DISK_MIN'
+    POLICIES = {
+        'MAX_MISSING_SCANS' : 10,
+        'ALP_ENABLED' : False
+    }
 
     __lock = Lock()
 

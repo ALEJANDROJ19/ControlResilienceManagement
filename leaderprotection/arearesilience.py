@@ -14,6 +14,7 @@ from random import randrange
 
 from common.logs import LOG
 from common.common import CPARAMS, URLS
+from policies.leaderprotectionpolicies import LeaderProtectionPolicies
 
 from requests.exceptions import ConnectTimeout as timeout
 
@@ -24,25 +25,24 @@ __author__ = 'Universitat Politècnica de Catalunya'
 
 
 class BackupEntry:
-    MAX_TTL = 3 / .1 # 30 ticks ~ 3 secs
-
     def __init__(self, deviceID, deviceIP, priority):
         self.deviceID = deviceID
         self.deviceIP = deviceIP
         self.priority = priority
-        self.TTL = self.MAX_TTL
+        self.TTL = LeaderProtectionPolicies.MAX_TTL     # Only because is creation
 
 
 class AreaResilience:
     # SELECTION_PORT = 46051  # 29512 # Deprecated - Keepalive is now REST!
     # LEADER_PORT = 46052  # 29513
 
-    MAX_RETRY_ATTEMPTS = 5
-
-    TIME_TO_WAIT_BACKUP_SELECTION = 3
-    TIME_KEEPALIVE = 1
-    TIME_KEEPER = .1
-    MINIMUM_BACKUPS = 1
+    # MAX_RETRY_ATTEMPTS = 5
+    #
+    # TIME_TO_WAIT_BACKUP_SELECTION = 3
+    # TIME_KEEPALIVE = 1
+    # TIME_KEEPER = .1
+    # MINIMUM_BACKUPS = 1
+    # MAX_TTL = 3 / .1  # 30 ticks ~ 3 secs
 
     PRIORITY_ON_DEMOTION = -2
     PRIORITY_ON_REELECTION = 0
@@ -50,7 +50,7 @@ class AreaResilience:
 
     TAG = '\033[34m' + '[AR]: ' + '\033[0m'
 
-    def __init__(self, CIMIRequesterFunction=None):
+    def __init__(self, CIMIRequesterFunction=None, leaderprotectionpolicies_obj=LeaderProtectionPolicies()):
         self._connected = False
         self._imBackup = False
         self._imLeader = False
@@ -61,6 +61,8 @@ class AreaResilience:
         self._deviceID = ''
         self._leaderIP = ''
         self._backupPriority = -1
+
+        self._lpp = leaderprotectionpolicies_obj
 
         self.backupDatabase = []
         self.backupDatabaseLock = threading.Lock()
@@ -309,7 +311,7 @@ class AreaResilience:
                     if backup.TTL >= 0:
                         correct_backups += 1
             # Enough?
-            if correct_backups >= self.MINIMUM_BACKUPS:
+            if correct_backups >= self._lpp.get(self._lpp.BACKUP_MINIMUM, default=1):
                 # Enough backups
                 LOG.debug('{} correct backup detected in Leader. Everything is OK.'.format(correct_backups))
             else:
@@ -319,7 +321,7 @@ class AreaResilience:
                 LOG.warning('{} backup dettected are not enough. Electing new ones...'.format(correct_backups))
                 topology = self.__getTopology()
                 new_backups = []
-                while self._connected and correct_backups < self.MINIMUM_BACKUPS and len(topology) > 0:
+                while self._connected and correct_backups < self._lpp.get(self._lpp.BACKUP_MINIMUM, default=1) and len(topology) > 0:
                     device = topology[0]
                     topology.remove(device)
                     # Todo: Evaluate if selected device is capable
@@ -332,14 +334,14 @@ class AreaResilience:
                         correct_backups += 1
                         new_backups.append(new_backups)
 
-                if correct_backups >= self.MINIMUM_BACKUPS:
+                if correct_backups >= self._lpp.get(self._lpp.BACKUP_MINIMUM, default=1):
                     # Now we have enough
                     LOG.info('{} correct backups dettected in Leader. {} new backups added.'.format(correct_backups, len(new_backups)))
                 else:
                     LOG.warning('{} backups dettected are not enough. Waiting for new election.'.format(correct_backups))
             # Sleep
             if self._connected:
-                sleep(self.TIME_TO_WAIT_BACKUP_SELECTION)
+                sleep(self._lpp.get(self._lpp.TIME_TO_WAIT_BACKUP_SELECTION))
         LOG.info('Leader stopped...')
 
     def __preSelectionSetup(self):
@@ -373,7 +375,7 @@ class AreaResilience:
             'deviceID': self._deviceID
         }
         self._imBackup = True
-        while self._connected and attempt < self.MAX_RETRY_ATTEMPTS:
+        while self._connected and attempt < self._lpp.get(self._lpp.MAX_RETRY_ATTEMPTS):
             stopLoop = False
             while self._connected and not stopLoop:
                 try:
@@ -402,13 +404,13 @@ class AreaResilience:
 
                     if not stopLoop:
                         # 4. Sleep
-                        sleep(self.TIME_KEEPALIVE)
+                        sleep(self._lpp.get(self._lpp.TIME_KEEPALIVE))
                     counter += 1
                 except:
                     # Connection broke, backup assumes that Leader is down.
                     LOG.debug('Keepalive connection refused')
                     stopLoop = True
-            LOG.warning('Keepalive connection is broken... Retry Attempts: {}'.format(self.MAX_RETRY_ATTEMPTS-(attempt+1)))
+            LOG.warning('Keepalive connection is broken... Retry Attempts: {}'.format(self._lpp.get(self._lpp.MAX_RETRY_ATTEMPTS)-(attempt+1)))
             attempt += 1
 
         if not self._connected:
@@ -442,7 +444,7 @@ class AreaResilience:
                         # Backup is ok
                         LOG.debug('Backup {}[{}] is OK with TTL: {}'.format(backup.deviceID, backup.deviceIP, backup.TTL))
             if self._connected:
-                sleep(self.TIME_KEEPER)
+                sleep(self._lpp.get(self._lpp.TIME_KEEPER))
         LOG.warning('Keeper thread stopped')
 
     def __send_election_message(self, address):
@@ -494,7 +496,7 @@ class AreaResilience:
             for backup in self.backupDatabase:
                 if backup.deviceID == deviceID:
                     # It's a match
-                    backup.TTL = BackupEntry.MAX_TTL
+                    backup.TTL = self._lpp.get(self._lpp.MAX_TTL)
                     LOG.debug(
                         'backupID: {}; backupIP: {}; priority: {}; Keepalive received correctly'.format(backup.deviceID,
                                                                                                         backup.deviceIP,

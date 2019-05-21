@@ -1,8 +1,7 @@
 # Control Resilience Management
 
-> Policies - Resource Management
+> Control Resilience Management
 > CRAAX - UPC, 2019
-> The Policies module is a component of the European Project mF2C.
 
 ---
 
