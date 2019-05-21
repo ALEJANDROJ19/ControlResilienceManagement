@@ -311,7 +311,7 @@ class AreaResilience:
             # Enough?
             if correct_backups >= self.MINIMUM_BACKUPS:
                 # Enough backups
-                LOG.debug('{} correct backup dettected in Leader. Everything is OK.'.format(correct_backups))
+                LOG.debug('{} correct backup detected in Leader. Everything is OK.'.format(correct_backups))
             else:
                 # Not enough
                 if not self._connected:
