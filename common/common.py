@@ -29,6 +29,7 @@ class common_params:
 
     def __init__(self):
         self.LEADER_FLAG = bool(environ.get('isLeader', default='False') == 'True')
+        self.LEADER_IP_FLAG = environ.get('leaderIP', default=None)
         self.TOPOLOGY_FLAG = eval(environ.get('TOPOLOGY', default='[]'))
         self.DEBUG_FLAG = bool(environ.get('DEBUG', default='False') == 'True')
         self.MF2C_FLAG = bool(environ.get('MF2C', default='False') == 'True')
@@ -37,6 +38,7 @@ class common_params:
 
         self.__dicc = {
             'LEADER_FLAG'       : self.LEADER_FLAG,
+            'LEADER_IP_FLAG'    : self.LEADER_IP_FLAG,
             'TOPOLOGY_FLAG'     : self.TOPOLOGY_FLAG,
             'DEBUG_FLAG'        : self.DEBUG_FLAG,
             'MF2C_FLAG'         : self.MF2C_FLAG,

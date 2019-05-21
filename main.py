@@ -29,12 +29,12 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
-arearesilience = AreaResilience() # TODO
-agentstart = AgentStart()  # TODO
+arearesilience = AreaResilience()
+agentstart = AgentStart()
 
 # ### main.py code ### #
 # Set Logger
@@ -375,6 +375,8 @@ def initialization():
     else:
         agentstart = AgentStart(addr_pol=('127.0.0.1', '46050'))
     agentstart.deviceID = CPARAMS.DEVICEID_FLAG     # TODO: remove this
+    if CPARAMS.LEADER_IP_FLAG is not None and len(CPARAMS.LEADER_IP_FLAG) != 0:
+        agentstart.leaderIP = CPARAMS.LEADER_IP_FLAG
     LOG.debug('Agent Start created')
 
     return
