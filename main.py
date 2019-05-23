@@ -20,6 +20,7 @@ from leaderprotection.arearesilience import AreaResilience
 from agentstart.agentstart import AgentStart
 from leaderprotection.leaderreelection import LeaderReelection
 from policies.policiesdistribution import PoliciesDistribution
+from lightdiscovery.lightdiscovery import LightDiscovery
 
 from flask import Flask, request
 from flask_restplus import Api, Resource, fields
@@ -30,13 +31,14 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.1.0'
+__version__ = 'b2.2.0'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
 arearesilience = AreaResilience()
 agentstart = AgentStart()
 policiesdistribution = PoliciesDistribution()
+lightdiscovery = LightDiscovery('', '')
 
 # ### main.py code ### #
 # Set Logger
@@ -58,6 +60,7 @@ api = Api(app, version=__version__, title='Control Resilience Management Module 
 
 pl = api.namespace('api/v2/resource-management/policies', description='Policies Module Operations')
 rm = api.namespace('rm', description='Resource Manager Operations')
+ld = api.namespace('ld', description='Light Discovery Operations')
 
 reelection_model = api.model('Reelection_msg', {
     'deviceID': fields.String(required=True, description='The deviceID of the device that is promoted as new leader.')
@@ -101,6 +104,14 @@ policies_distr_model = api.model('Policies',{
     "LPP": fields.String(description='Leader Protection Policies in JSON format.'),
     "LRP": fields.String(description='Leader Reelection Policies in JSON format.'),
     "DP": fields.String(description='Distribution Policies in JSON format.')
+})
+
+beacon_reply_model = api.model('Beacon Reply',{
+    "deviceID": fields.String(required=True, description='ID of the Agent'),
+    "deviceIP": fields.String(required=True, description='IP of the Agent'),
+    "cpu_cores": fields.Integer(required=True, description='Number of Logical Cores of Device'),
+    "mem_avail": fields.Float(required=True, description='Virtual Memory Available'),
+    "stg_avail": fields.Float(required=True, description='Device Total Storage Available'),
 })
 
 
@@ -370,15 +381,91 @@ class policyTrigger(Resource):
         return 200
 
 
+@ld.route(URLS.END_BEACONREPLY)
+class beaconReply(Resource):
+    """Beacon Reply"""
+    @ld.doc('post_beaconreply')
+    @ld.expect(beacon_reply_model)
+    @ld.response(200, 'Device added/modified on the topology')
+    @ld.response(400, 'Error on beacon reply message')
+    def post(self):
+        """Beacon Reply"""
+        deviceIP = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+        correct = lightdiscovery.recv_reply(api.payload, deviceIP)
+        if correct:
+            return '', 200
+        else:
+            return '', 400
+
+
+# noinspection PyUnresolvedReferences
+@ld.route('{}/<string:mode>/<string:operation>'.format(URLS.END_LDISCOVERY_CONTROL))
+@ld.param('mode', description='LDiscovery mode (beacon/scan)')
+@ld.param('operation', description='Operation on LDiscovery (start/stop)')
+class ldiscoveryControl(Resource):
+    """Control the LDiscovery Module"""
+    @ld.doc('get_control_ld')
+    @ld.response(200, 'Successful operation')
+    @ld.response(400, 'Error on operation')
+    @ld.response(404, 'Mode/Operation not found')
+    def get(self, mode, operation):
+        """Control the LDiscovery Module"""
+        if mode.lower() == 'beacon':
+            # Beacon operation (Leader)
+            if operation.lower() == 'start':
+                # Start LDiscovery beaconning
+                correct = lightdiscovery.startBeaconning()
+                if correct:
+                    return '', 200
+                else:
+                    return '', 400
+            elif operation.lower() == 'stop':
+                correct = lightdiscovery.stopBeaconning()
+                if correct:
+                    return '', 200
+                else:
+                    return '', 400
+            else:
+                return '', 404
+        elif mode.lower() == 'scan':
+            # Scan operation (Agent)
+            if operation.lower() == 'start':
+                correct = lightdiscovery.startScanning()
+                if correct:
+                    return '', 200
+                else:
+                    return '', 400
+            elif operation.lower() == 'stop':
+                correct = lightdiscovery.stopScanning()
+                if correct:
+                    return '', 200
+                else:
+                    return '', 400
+            else:
+                return '', 404
+        else:
+            return '', 404
+
+
+@ld.route(URLS.END_LDISCOVERY_TOPOLOGY)
+class ldiscoveryTopology(Resource):
+    """Get the current topology"""
+    @ld.doc('get_topology')
+    @ld.response(200, 'Topology Successful received')
+    def get(self):
+        return {'topology': lightdiscovery.get_topology()}, 200
+
+
 # And da Main Program
-def cimi(key, default=None):    # TODO: Remove this (only for code redessign)
+def cimi(key, default=None):
     value = default
     if key == 'leader':
         value = CPARAMS.LEADER_FLAG
     elif key == 'topology':
         value = []
         try:
-            for item in CPARAMS.TOPOLOGY_FLAG:
+            # for item in CPARAMS.TOPOLOGY_FLAG:
+            for item in lightdiscovery.get_topology():
                 i = {
                     'deviceID': item[0],
                     'deviceIP': item[1]
@@ -392,7 +479,7 @@ def cimi(key, default=None):    # TODO: Remove this (only for code redessign)
 
 
 def initialization():
-    global arearesilience, agentstart
+    global arearesilience, agentstart, lightdiscovery
     # 0. Waitting time
     LOG.info('INIT: Wait {:.2f}s to start'.format(CPARAMS.TIME_WAIT_INIT))
     sleep(CPARAMS.TIME_WAIT_INIT)
@@ -414,10 +501,15 @@ def initialization():
                                 addr_id=('identification', '46060'))
     else:
         agentstart = AgentStart(addr_pol=('127.0.0.1', '46050'))
-    agentstart.deviceID = CPARAMS.DEVICEID_FLAG     # TODO: remove this
+    agentstart.deviceID = CPARAMS.DEVICEID_FLAG
     if CPARAMS.LEADER_IP_FLAG is not None and len(CPARAMS.LEADER_IP_FLAG) != 0:
         agentstart.leaderIP = CPARAMS.LEADER_IP_FLAG
     LOG.debug('Agent Start created')
+
+    # 4. Light Discovery Module Creation
+    LOG.debug('Light Discovery submodule creation')
+    lightdiscovery = LightDiscovery(CPARAMS.BROADCAST_ADDR_FLAG,CPARAMS.DEVICEID_FLAG)
+    LOG.debug('Light discovery created')
 
     return
 
@@ -428,7 +520,13 @@ def main():
 
 
 def debug():
-    sleep(10)
+    sleep(10)   # Give some time to the webservice
+    LOG.info('Starting LDiscovery...')
+    if CPARAMS.LEADER_FLAG:
+        r = requests.get(URLS.build_url_address('{}beacon/start'.format(URLS.URL_LDISCOVERY_CONTROL), portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
+    else:
+        r = requests.get(URLS.build_url_address('{}scan/start'.format(URLS.URL_LDISCOVERY_CONTROL), portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
+    LOG.info('LDiscovery started with status_code = {}'.format(r.status_code))
     LOG.info('Starting Area Resilience...')
     r = requests.get(URLS.build_url_address(URLS.URL_POLICIES, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
     LOG.debug('Area Resilience request result: {}'.format(r.json()))

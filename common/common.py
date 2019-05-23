@@ -17,6 +17,7 @@ from os import environ
 ##############################
 class common_params:
     POLICIES_PORT = 46050
+    LDISCOVERY_PORT = 46051
 
     CIMI_URL = 'http://cimi:8201/api'
     CIMI_HEADER = {'slipstream-authn-info': 'super ADMIN'}
@@ -33,7 +34,8 @@ class common_params:
         self.DEBUG_FLAG = bool(environ.get('DEBUG', default='False') == 'True')
         self.MF2C_FLAG = bool(environ.get('MF2C', default='False') == 'True')
         self.WIFI_DEV_FLAG = str(environ.get('WIFI_DEV', default=''))
-        self.DEVICEID_FLAG = str(environ.get('DEVICEID', default='agent/1234'))     # TODO: Remove this
+        self.DEVICEID_FLAG = str(environ.get('DEVICEID', default='agent/1234'))
+        self.BROADCAST_ADDR_FLAG = str(environ.get('BROADCASTADDR', default=''))
 
         self.__dicc = {
             'LEADER_FLAG'       : self.LEADER_FLAG,
@@ -48,7 +50,8 @@ class common_params:
             'WIFI_CONFIG_FILE'  : self.WIFI_CONFIG_FILE,
             'TIME_WAIT_ALIVE'   : self.TIME_WAIT_ALIVE,
             'POLICIES_PORT'     : self.POLICIES_PORT,
-            'DEVICEID_FLAG'     : self.DEVICEID_FLAG
+            'DEVICEID_FLAG'     : self.DEVICEID_FLAG,
+            'BROADCAST_ADDR_FLAG':self.BROADCAST_ADDR_FLAG
         }
 
     def get_all(self):
@@ -88,6 +91,14 @@ class ModuleURLs:
     URL_POLICIESDISTR_RECV = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIESDISTR_RECV)
     END_POLICIESDISTR_TRIGGER = '/PoliciesDistributionTrigger'
     URL_POLICIESDISTR_TRIGGER = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIESDISTR_TRIGGER)
+
+    LDISCOVERY_BASE_URL = '/ld'
+    END_BEACONREPLY = '/beaconReply'
+    URL_BEACONREPLY = '{}{}/'.format(LDISCOVERY_BASE_URL, END_BEACONREPLY)
+    END_LDISCOVERY_CONTROL = '/control'
+    URL_LDISCOVERY_CONTROL = '{}{}/'.format(LDISCOVERY_BASE_URL, END_LDISCOVERY_CONTROL)
+    END_LDISCOVERY_TOPOLOGY = '/topology'
+    URL_LDISCOVERY_TOPOLOGY = '{}{}/'.format(LDISCOVERY_BASE_URL, END_LDISCOVERY_TOPOLOGY)
 
     URL_POLICIES_RMSTATUS = '/rm/components/'
 
