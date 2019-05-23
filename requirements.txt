@@ -2,3 +2,4 @@ Flask
 flask-restplus
 requests
 colorlog
+psutil
