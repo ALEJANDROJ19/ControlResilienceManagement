@@ -29,7 +29,7 @@ class BackupEntry:
         self.deviceID = deviceID
         self.deviceIP = deviceIP
         self.priority = priority
-        self.TTL = LeaderProtectionPolicies.MAX_TTL     # Only because is creation
+        self.TTL = 5 / .1     # Only because is creation
 
 
 class AreaResilience:
@@ -496,7 +496,7 @@ class AreaResilience:
             for backup in self.backupDatabase:
                 if backup.deviceID == deviceID:
                     # It's a match
-                    backup.TTL = self._lpp.get(self._lpp.MAX_TTL)
+                    backup.TTL = int(self._lpp.get(self._lpp.MAX_TTL))
                     LOG.debug(
                         'backupID: {}; backupIP: {}; priority: {}; Keepalive received correctly'.format(backup.deviceID,
                                                                                                         backup.deviceIP,
