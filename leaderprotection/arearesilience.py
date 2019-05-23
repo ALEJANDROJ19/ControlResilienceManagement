@@ -18,7 +18,6 @@ from policies.leaderprotectionpolicies import LeaderProtectionPolicies
 
 from requests.exceptions import ConnectTimeout as timeout
 
-__status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
 __author__ = 'Universitat Politècnica de Catalunya'
