@@ -10,6 +10,7 @@ import requests
 
 from common.logs import LOG
 from common.common import CPARAMS, URLS
+from json import dumps
 
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
@@ -43,6 +44,13 @@ class LeaderReelection:
             # 2. Change preference to 0
             backup.priority = arearesilience.PRIORITY_ON_REELECTION
 
+        # 0.3 Change Policy of MINIMUM_BACKUPS
+        payload = {'LPP':dumps({'BACKUP_MINIMUM':1})}
+        r = requests.post(URLS.build_url_address(URLS.URL_POLICIESDISTR_RECV, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)),json=payload)
+        if r.status_code == 200:
+            LOG.info('BACKUP_MINIMUM successfully updated for reelection.')
+        else:
+            LOG.warning('BACKUP_MINIMUM received status_code {} on self update.'.format(r.status_code))
         # 3. Demote other backups (if any)
         backups = arearesilience.getBackupDatabase()
         for backup in backups:
