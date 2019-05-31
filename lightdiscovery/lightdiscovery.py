@@ -52,6 +52,7 @@ class LightDiscovery:
         if self._isStarted and self._isBroadcasting:
             self._connected = False
             try:
+                self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
                 LOG.debug('Socket closed on beaconing')
             except:
@@ -81,6 +82,7 @@ class LightDiscovery:
         if self._isStarted and self._isScanning:
             self._connected = False
             try:
+                self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
                 LOG.debug('Socket closed on scanning')
             except:

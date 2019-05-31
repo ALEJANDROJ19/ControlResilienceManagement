@@ -31,7 +31,7 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.2.0'
+__version__ = 'b2.2.1'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -214,7 +214,9 @@ class role_change(Resource):
             elif imBackup:
                 # Hi, I'm backup-kun - It's my time to shine!!
                 LOG.debug('Role change: Backup -> Leader')
-                ret = agentstart.switch(imLeader=True)
+                # ret = agentstart.switch(imLeader=True)
+                lightdiscovery.stopScanning()
+                ret = lightdiscovery.startBeaconning()
                 if ret:
                     LOG.info('Successful promotion to Leader')
                 else:
@@ -256,7 +258,9 @@ class role_change(Resource):
                 # Leader demotion
                 LOG.debug('Role change: Leader -> Agent')
                 arearesilience.stop()
-                agentstart.switch(imLeader=False)
+                # agentstart.switch(imLeader=False)
+                lightdiscovery.stopBeaconning()
+                lightdiscovery.startScanning()
                 CPARAMS.LEADER_FLAG = False
                 arearesilience = AreaResilience(cimi, policiesdistribution.LPP)
                 arearesilience.start(agentstart.deviceID)
