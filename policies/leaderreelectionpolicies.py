@@ -16,7 +16,11 @@ __author__ = 'Universitat Politècnica de Catalunya'
 
 class LeaderReelectionPolicies:
 
-    POLICIES = {}
+    POLICIES = {
+        'REELECTION_ALLOWED': True
+    }
+
+    REELECTION_ALLOWED = 'REELECTION_ALLOWED'
 
     __lock = Lock()
 

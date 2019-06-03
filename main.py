@@ -31,7 +31,7 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.2.2'
+__version__ = 'b2.2.3'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
