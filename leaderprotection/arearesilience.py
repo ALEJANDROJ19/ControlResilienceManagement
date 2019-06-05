@@ -60,6 +60,7 @@ class AreaResilience:
         self._deviceID = ''
         self._leaderIP = ''
         self._backupPriority = -1
+        self._nextPriority = 1
 
         self._lpp = leaderprotectionpolicies_obj
 
@@ -175,7 +176,7 @@ class AreaResilience:
             if self.th_proc is not None:
                 while self.th_proc.is_alive():
                     LOG.debug(self.TAG + 'Waiting {} to resume activity...'.format(self.th_proc.name))
-                    sleep(0.1)
+                    sleep(0.5)
 
             if self.th_keep is not None:
                 while self.th_keep.is_alive():
@@ -254,6 +255,32 @@ class AreaResilience:
         if not self._connected:
             return
 
+        # Multiple backups support
+        if self._backupPriority > 0:
+            sleep_time = 1. + 10 * (self._backupPriority - 1)
+            LOG.info('Waiting {}s before leader takeover...'.format(sleep_time))
+            sleep(sleep_time)
+            if not self._connected:
+                return
+            LOG.debug('Checking if new Leader is up...')
+            new_leader = self.__getCIMIData('disc_leaderIP', default='')
+            LOG.debug('Stored Leader = [{}], Detected Leader = [{}]'.format(self._leaderIP, new_leader))
+            if new_leader == '' or new_leader == self._leaderIP:
+                LOG.warning('Leader not detected by Discovery')
+            elif self._leaderIP != new_leader:
+                LOG.info('Correct Leader takeover by a backup with more preference.')
+                try:    # TODO: Clean solution
+                    r = requests.get('{}agent'.format(
+                        URLS.build_url_address(URLS.URL_POLICIES_ROLECHANGE, addr='127.0.0.1', port=CPARAMS.POLICIES_PORT)),
+                        timeout=.5)
+                except:
+                    pass
+                finally:
+                    return
+
+        if not self._connected:
+            return
+
         if self._imLeader or self._leaderFailed:
             # I'm a leader
             LOG.info(self.TAG + 'Leader seting up')
@@ -323,15 +350,23 @@ class AreaResilience:
                 while self._connected and correct_backups < self._lpp.get(self._lpp.BACKUP_MINIMUM, default=1) and len(topology) > 0:
                     device = topology[0]
                     topology.remove(device)
-                    # Todo: Evaluate if selected device is capable
-                    correct = self.__send_election_message(device.get('deviceIP'))
-                    if correct:
-                        new_backup = BackupEntry(device.get('deviceID'), device.get('deviceIP'), 1)
-                        with self.backupDatabaseLock:
-                            self.backupDatabase.append(new_backup)
-                        LOG.info('Backup {}[{}] added with priority {}'.format(device.get('deviceID'), device.get('deviceIP'), 1))
-                        correct_backups += 1
-                        new_backups.append(new_backups)
+                    found = False
+                    with self.backupDatabaseLock:
+                        for backup in self.backupDatabase:
+                            if backup.deviceID == device.get('deviceID'):
+                                found = True
+                                break
+                    if not found:
+                        # Todo: Evaluate if selected device is capable
+                        correct = self.__send_election_message(device.get('deviceIP'))
+                        if correct:
+                            new_backup = BackupEntry(device.get('deviceID'), device.get('deviceIP'), self._nextPriority)
+                            with self.backupDatabaseLock:
+                                self.backupDatabase.append(new_backup)
+                            LOG.info('Backup {}[{}] added with priority {}'.format(device.get('deviceID'), device.get('deviceIP'), self._nextPriority))
+                            correct_backups += 1
+                            self._nextPriority += 1
+                            new_backups.append(new_backups)
 
                 if correct_backups >= self._lpp.get(self._lpp.BACKUP_MINIMUM, default=1):
                     # Now we have enough

@@ -28,6 +28,8 @@ class LightDiscovery:
         self._isBroadcasting = False
         self._isScanning = False
         self._deviceID = deviceID
+        self.leaderIP = None
+        self.leaderID = None
 
         self._bcast_addr = bcast_addr
         self._th_proc = threading.Thread()
@@ -43,6 +45,8 @@ class LightDiscovery:
         self._connected = True
         self._isStarted = True
         self._isBroadcasting = True
+        self.leaderIP = None
+        self.leaderID = self._deviceID
         self._db = {}
         self._th_proc.start()
         LOG.info('LDiscovery successfully started in Beacon Mode.')
@@ -61,6 +65,8 @@ class LightDiscovery:
             LOG.info('LDisc Beaconning Stopped')
             self._isBroadcasting = False
             self._isStarted = False
+            self.leaderIP = None
+            self.leaderID = None
         else:
             LOG.warning('LDisc is not Beaconning.')
         return True
@@ -74,6 +80,8 @@ class LightDiscovery:
         self._connected = True
         self._isStarted = True
         self._isScanning = True
+        self.leaderIP = None
+        self.leaderID = None
         self._th_proc.start()
         LOG.info('LDiscovery successfully started in Scan Mode.')
         return True
@@ -91,6 +99,8 @@ class LightDiscovery:
             LOG.info('LDisc Scanning Stopped')
             self._isScanning = False
             self._isStarted = False
+            self.leaderIP = None
+            self.leaderID = None
         else:
             LOG.warning('LDisc is not Scanning.')
         return True
@@ -152,6 +162,12 @@ class LightDiscovery:
                 if not self._connected:
                     break
                 LOG.debug('Received beacon from [{}]: \"{}\"'.format(addr[0], data.decode()))
+                self.leaderIP = addr[0]
+                try:
+                    ddata = loads(data.decode())
+                    self.leaderID = ddata.get('leaderID')
+                except JSONDecodeError:
+                    LOG.warning('Beacon payload malformed')
                 cpu, mem, stg = self.__categorize_device()
                 LOG.debug('CPU: {}, MEM: {}, STG: {}'.format(cpu,mem,stg))
                 payload = DeviceInformation(deviceID=self._deviceID, cpuCores=cpu, memAvail=mem, stgAvail=stg).getDict()

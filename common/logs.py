@@ -14,7 +14,7 @@ __email__ = 'ajurnet@ac.upc.edu'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 
-FORMAT = '[POLICIES - %(threadName)-10s] %(log_color)s%(levelname)-10s:%(reset)s %(message_log_color)s%(message)s'
+FORMAT = '[CRM - %(threadName)-10s] %(log_color)s%(levelname)-10s:%(reset)s %(message_log_color)s%(message)s'
 LOG = logging.getLogger('main')
 
 if len(LOG.handlers) < 1: # To avoid duplicated LOGs due multiple handlers (more info: https://stackoverflow.com/a/7672941)

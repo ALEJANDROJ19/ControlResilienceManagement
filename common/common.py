@@ -65,7 +65,7 @@ CPARAMS = common_params()
 #   Modules URLs
 ##############################
 class ModuleURLs:
-    __POLICIES_BASE_URL = '/api/v2/resource-management/policies'
+    __POLICIES_BASE_URL = '/crm-api'
     URL_DISCOVERY = '/api/v1/resource-management/discovery/scan/'
     URL_DISCOVERY_MAC = '/api/v1/resource-management/discovery/mac/'  # Deprecated
     URL_DISCOVERY_SWITCH_LEADER = '/api/v1/resource-management/discovery/broadcast/'
@@ -82,7 +82,7 @@ class ModuleURLs:
     URL_POLICIES_ROLECHANGE = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIES_ROLECHANGE)
     END_POLICIES_LEADERINFO = '/leaderinfo'
     URL_POLICIES_LEADERINFO = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIES_LEADERINFO)
-    END_START_FLOW = 'startAgent'
+    END_START_FLOW = '/startAgent'
     URL_START_FLOW = '{}{}/'.format(__POLICIES_BASE_URL, END_START_FLOW)
     END_POLICIES_KEEPALIVE = '/keepalive'
     URL_POLICIES_KEEPALIVE = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIES_KEEPALIVE)

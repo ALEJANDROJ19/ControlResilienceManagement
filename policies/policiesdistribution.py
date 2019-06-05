@@ -111,3 +111,4 @@ class PoliciesDistribution:
         LOG.info('Policies Received from Leader.')
         for policy in self.__POLICIES.keys():
             LOG.debug('[{}] - {}'.format(policy, self.__POLICIES[policy].get_json()))
+        return True

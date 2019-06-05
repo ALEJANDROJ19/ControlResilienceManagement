@@ -31,7 +31,7 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.2.3'
+__version__ = 'b2.3.0'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -58,7 +58,7 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 api = Api(app, version=__version__, title='Control Resilience Management Module - {}'.format(CPARAMS.DEVICEID_FLAG), description='API')
 
-pl = api.namespace('api/v2/resource-management/policies', description='Policies Module Operations')
+pl = api.namespace('crm-api', description='CRM Operations')
 rm = api.namespace('rm', description='Resource Manager Operations')
 ld = api.namespace('ld', description='Light Discovery Operations')
 
@@ -304,12 +304,13 @@ class reelection(Resource):
                 deviceIP = device.get('deviceIP')
                 break
 
-        if not found:
-            LOG.error('Device {} not found in the topology'.format(deviceID))
-            return {'deviceID': deviceID, 'deviceIP': deviceIP}, 404
         if not arearesilience.imLeader():
             LOG.error('Device is not a Leader, cannot perform a reelection in a non-leader device.')
             return {'deviceID': deviceID, 'deviceIP': deviceIP}, 401
+        if not found:
+            LOG.error('Device {} not found in the topology'.format(deviceID))
+            return {'deviceID': deviceID, 'deviceIP': deviceIP}, 404
+
 
         correct = LeaderReelection.reelection(arearesilience, deviceID, deviceIP)
         if correct:
@@ -478,7 +479,10 @@ def cimi(key, default=None):
         except:
             LOG.exception('Topology Environment variable format is not correct.')
             value = []
-
+    elif key == 'disc_leaderIP':
+        value = lightdiscovery.leaderIP
+        if value is None:
+            value = default
     return value
 
 
