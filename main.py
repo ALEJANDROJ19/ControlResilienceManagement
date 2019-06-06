@@ -31,7 +31,7 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.3.0'
+__version__ = 'b2.4.0'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -384,6 +384,17 @@ class policyTrigger(Resource):
         iplist = [item.get('deviceIP') for item in cimi('topology')]
         policiesdistribution.distributePolicies(iplist)
         return 200
+
+
+@pl.route(URLS.END_POLICIESGET)
+class policyGetCurrent(Resource):
+    """Policies Distribution Get Current Policies"""
+    @pl.doc('get_currentpolicies')
+    @pl.response(200, 'Policies received')
+    @pl.marshal_with(policies_distr_model, code=200)
+    def get(self):
+        """Policies Distribution Get Current Policies"""
+        return policiesdistribution.getPolicies(), 200
 
 
 @ld.route(URLS.END_BEACONREPLY)

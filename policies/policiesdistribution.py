@@ -112,3 +112,9 @@ class PoliciesDistribution:
         for policy in self.__POLICIES.keys():
             LOG.debug('[{}] - {}'.format(policy, self.__POLICIES[policy].get_json()))
         return True
+
+    def getPolicies(self):
+        payload = {}
+        for policy in self.__POLICIES.keys():
+            payload.update({policy: self.__POLICIES.get(policy).get_json()})
+        return payload
