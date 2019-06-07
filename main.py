@@ -31,7 +31,7 @@ import requests
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = 'b2.4.0'
+__version__ = 'b2.4.1'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -72,7 +72,8 @@ keepalive_model = api.model('Keepalive Message', {
 
 keepalive_reply_model = api.model('Keepalive Reply Message', {
     'deviceID': fields.String(required=True, description='The deviceID of the device that is replying the message.'),
-    'backupPriority': fields.Integer(required=True, description='Order of the backup in the area.')
+    'backupPriority': fields.Integer(required=True, description='Order of the backup in the area.'),
+    'controlInformation': fields.String(required=False, description='Control Data Replication payload.')
 })
 
 leader_info_model = api.model('Leader Info Message', {
@@ -254,7 +255,7 @@ class role_change(Resource):
         elif role.lower() == 'agent':
             # Bigger will be the fall....
             if imLeader:
-                # You are shuch an incompetent, you're FIRED!
+                # You are such an incompetent, you're FIRED!
                 # Leader demotion
                 LOG.debug('Role change: Leader -> Agent')
                 arearesilience.stop()
@@ -266,7 +267,7 @@ class role_change(Resource):
                 arearesilience.start(agentstart.deviceID)
                 return {'imLeader': False, 'imBackup': False}, 200
             elif imBackup:
-                # Maybe we are gona call you latter.... or not
+                # Maybe we are gonna call you latter.... or not
                 # Backup demotion
                 LOG.debug('Role change: Backup -> Agent')
                 arearesilience.stop()
