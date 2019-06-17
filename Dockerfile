@@ -1,8 +1,8 @@
-#FROM python:3
-FROM baseimagecrm:latest
-ADD . /Policies
-WORKDIR /Policies
-#RUN bash -c "pip install -r requirements.txt"
+FROM python:3
+#FROM baseimagecrm:latest
+ADD . /CRM
+WORKDIR /CRM
+RUN bash -c "pip install -r requirements.txt"
 
 EXPOSE 46050
 
